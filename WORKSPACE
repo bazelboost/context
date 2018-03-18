@@ -1,9 +1,9 @@
 
 http_archive(
-	name = "com_github_bazelboost_predef",
-	strip_prefix = "predef-boost-1.65.1",
+	name = "com_github_bazelboost_assert",
+	strip_prefix = "assert-boost-1.65.1",
 	urls = [
-		"https://github.com/bazelboost/predef/archive/boost-1.65.1.tar.gz"
+		"https://github.com/bazelboost/assert/archive/boost-1.65.1.tar.gz"
 	],
 )
 
@@ -16,9 +16,17 @@ http_archive(
 )
 
 http_archive(
-	name = "com_github_bazelboost_assert",
-	strip_prefix = "assert-boost-1.65.1",
+	name = "com_github_bazelboost_smart_ptr",
+	strip_prefix = "smart_ptr-boost-1.65.1",
 	urls = [
-		"https://github.com/bazelboost/assert/archive/boost-1.65.1.tar.gz"
+		"https://github.com/bazelboost/smart_ptr/archive/boost-1.65.1.tar.gz"
+	],
+)
+
+http_archive(
+	name = "com_github_bazelboost_pool",
+	strip_prefix = "pool-boost-1.65.1",
+	urls = [
+		"https://github.com/bazelboost/pool/archive/boost-1.65.1.tar.gz"
 	],
 )
