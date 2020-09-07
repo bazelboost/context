@@ -1,0 +1,151 @@
+load("@bazel_skylib//rules:copy_file.bzl", "copy_file")
+load("@rules_cc//cc:defs.bzl", "cc_library")
+
+_public_hdrs = [
+    "include/boost/*.hpp",
+    "include/boost/context/*.hpp",
+    "include/boost/context/posix/*.hpp",
+    "include/boost/context/windows/*.hpp",
+]
+
+config_setting(
+    name = "linux_arm",
+    constraint_values = [
+        "@bazel_tools//platforms:linux",
+        "@bazel_tools//platforms:arm",
+    ],
+)
+
+config_setting(
+    name = "linux_ppc",
+    constraint_values = [
+        "@bazel_tools//platforms:linux",
+        "@bazel_tools//platforms:ppc",
+    ],
+)
+
+config_setting(
+    name = "linux_aarch64",
+    constraint_values = [
+        "@bazel_tools//platforms:linux",
+        "@bazel_tools//platforms:aarch64",
+    ],
+)
+
+config_setting(
+    name = "linux_x86_64",
+    constraint_values = [
+        "@bazel_tools//platforms:linux",
+        "@bazel_tools//platforms:x86_64",
+    ],
+)
+
+config_setting(
+    name = "osx_x86_64",
+    constraint_values = [
+        "@bazel_tools//platforms:osx",
+        "@bazel_tools//platforms:x86_64",
+    ],
+)
+
+config_setting(
+    name = "windows_x86_64",
+    constraint_values = [
+        "@bazel_tools//platforms:windows",
+        "@bazel_tools//platforms:x86_64",
+    ],
+)
+
+config_setting(
+    name = "windows",
+    constraint_values = [
+        "@bazel_tools//platforms:windows",
+    ],
+)
+
+config_setting(
+    name = "linux",
+    constraint_values = [
+        "@bazel_tools//platforms:linux",
+    ],
+)
+
+config_setting(
+    name = "osx",
+    constraint_values = [
+        "@bazel_tools//platforms:osx",
+    ],
+)
+
+# Rename .asm to .S so that it will be handled with the C preprocessor.
+[copy_file(
+    name = "rename_%s" % name,
+    src = "src/asm/%s_x86_64_ms_pe_masm.asm" % name,
+    out = "src/asm/%s_x86_64_ms_pe_masm.S" % name,
+) for name in [
+    "make",
+    "jump",
+    "ontop",
+]]
+
+_asm_srcs = select({
+    ":linux_aarch64": [
+        "src/asm/jump_arm64_aapcs_elf_gas.S",
+        "src/asm/make_arm64_aapcs_elf_gas.S",
+        "src/asm/ontop_arm64_aapcs_elf_gas.S",
+    ],
+    ":linux_arm": [
+        "src/asm/jump_arm_aapcs_elf_gas.S",
+        "src/asm/make_arm_aapcs_elf_gas.S",
+        "src/asm/ontop_arm_aapcs_elf_gas.S",
+    ],
+    ":linux_ppc": [
+        "src/asm/jump_ppc64_sysv_elf_gas.S",
+        "src/asm/make_ppc64_sysv_elf_gas.S",
+        "src/asm/ontop_ppc64_sysv_elf_gas.S",
+    ],
+    ":linux_x86_64": [
+        "src/asm/jump_x86_64_sysv_elf_gas.S",
+        "src/asm/make_x86_64_sysv_elf_gas.S",
+        "src/asm/ontop_x86_64_sysv_elf_gas.S",
+    ],
+    ":osx_x86_64": [
+        "src/asm/jump_x86_64_sysv_macho_gas.S",
+        "src/asm/make_x86_64_sysv_macho_gas.S",
+        "src/asm/ontop_x86_64_sysv_macho_gas.S",
+    ],
+    ":windows_x86_64": [
+        "src/asm/make_x86_64_ms_pe_masm.S",
+        "src/asm/jump_x86_64_ms_pe_masm.S",
+        "src/asm/ontop_x86_64_ms_pe_masm.S",
+    ],
+    "//conditions:default": [],
+})
+
+cc_library(
+    name = "context_internal",
+    includes = ["include"],
+    hdrs = glob(["include/boost/**/*.hpp"], exclude = _public_hdrs),
+    defines = select({
+        ":windows_x86_64": {"BOOST_CONTEXT_EXPORT": ""},
+        "//conditions:default": {},
+    }),
+    srcs = _asm_srcs + glob(_public_hdrs) + select({
+        ":osx": glob(["src/posix/*"]),
+        ":linux": glob(["src/posix/*"]),
+        ":windows": glob(["src/windows/*"]),
+        "//conditions:default": ["untested.cpp"],
+    }),
+    deps = [
+        "@boost//assert",
+        "@boost//config",
+    ],
+)
+
+cc_library(
+    name = "context",
+    visibility = ["//visibility:public"],
+    includes = ["include"],
+    hdrs = glob(_public_hdrs),
+    deps = [":context_internal"],
+)
